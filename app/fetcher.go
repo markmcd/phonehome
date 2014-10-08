@@ -3,16 +3,16 @@ package main
 import (
 	"archive/zip"
 	"bytes"
-	"log"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"time"
 )
 
 type FetchFile struct {
-	Path string
-	When time.Time
+	Path  string
+	When  time.Time
 	Bytes []byte
 }
 
@@ -50,8 +50,8 @@ func Fetch(client *http.Client, user, repo string) ([]*FetchFile, error) {
 		reader.Close()
 
 		ff := &FetchFile{
-			Path: file.Name,
-			When: file.ModTime(),
+			Path:  file.Name,
+			When:  file.ModTime(),
 			Bytes: bytes,
 		}
 		out = append(out, ff)

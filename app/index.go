@@ -14,21 +14,21 @@ type Result struct {
 	Path string // file path, e.g. "examples/markdown/main.go"
 	Line int    // line number hit
 
-	Offset int     // offset within Lines where result is
-	Lines []string
+	Offset int // offset within Lines where result is
+	Lines  []string
 }
 
 func Search(c appengine.Context, query string) (results []*Result, err error) {
 	fields := Fields([]byte(query))
 	if len(fields) == 0 {
-		return  nil, nil
+		return nil, nil
 	}
 
 	for _, field := range fields {
 		s := string(field)
 		q := datastore.NewQuery("Token").
-				Filter("Term >=", s).
-				Filter("Term <", s + "\uffffd")
+			Filter("Term >=", s).
+			Filter("Term <", s+"\uffffd")
 		var out []*Token
 		keys, err := q.GetAll(c, &out)
 		if err != nil {

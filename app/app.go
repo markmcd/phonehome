@@ -1,10 +1,10 @@
 package main
 
 import (
-	"time"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"appengine"
 	"appengine/datastore"
@@ -19,13 +19,13 @@ func init() {
 	http.HandleFunc("/index", func(w http.ResponseWriter, r *http.Request) {
 		c := appengine.NewContext(r)
 		client := urlfetch.Client(c)
-		stats := struct{
+		stats := struct {
 			Files, EmptyFiles, Tokens int
 		}{}
 
 		repo := &Repo{
-			User: r.FormValue("user"),
-			Repo: r.FormValue("repo"),
+			User:    r.FormValue("user"),
+			Repo:    r.FormValue("repo"),
 			Updated: time.Now(),
 		}
 		if repo.User == "" || repo.Repo == "" {
@@ -52,7 +52,7 @@ func init() {
 			tokens := Tags(ff.Bytes)
 			if len(tokens) == 0 {
 				stats.EmptyFiles++
-				continue  // don't store this file
+				continue // don't store this file
 			}
 
 			for _, token := range tokens {
@@ -121,15 +121,15 @@ func init() {
 			return
 		}
 
-        results, err := Search(c, query)
-        if err != nil {
-            c.Warningf("search failed: %s", err)
-            w.WriteHeader(500)
-            return
-        }
-        w.Header().Set("Content-Type", "application/json")
+		results, err := Search(c, query)
+		if err != nil {
+			c.Warningf("search failed: %s", err)
+			w.WriteHeader(500)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
 
-        json, err := json.Marshal(results)
-        fmt.Fprintf(w, string(json))
+		json, err := json.Marshal(results)
+		fmt.Fprintf(w, string(json))
 	})
 }
