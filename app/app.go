@@ -28,13 +28,16 @@ func init() {
 			Repo:    r.FormValue("repo"),
 			Updated: time.Now(),
 		}
+		if r.FormValue("branch") != "" {
+			repo.Branch = r.FormValue("branch")
+		}
 		if repo.User == "" || repo.Repo == "" {
 			c.Debugf("needs user/repo set")
 			w.WriteHeader(400)
 			return
 		}
 
-		ffs, err := Fetch(client, repo.User, repo.Repo)
+		ffs, err := Fetch(client, repo.User, repo.Repo, repo.Branch)
 		if err != nil {
 			c.Warningf("couldn't fetch %s: %s", repo.ID(), err)
 			w.WriteHeader(500)

@@ -12,10 +12,14 @@ import (
 type Repo struct {
 	User    string
 	Repo    string
+	Branch  string
 	Updated time.Time
 }
 
 func (r *Repo) ID() string {
+	if r.Branch != "master" && r.Branch != "" {
+		return fmt.Sprintf("%s/%s/%s", r.User, r.Repo, r.Branch)
+	}
 	return fmt.Sprintf("%s/%s", r.User, r.Repo)
 }
 

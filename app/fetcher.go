@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -17,9 +18,12 @@ type FetchFile struct {
 }
 
 // Fetch pulls a zip file from github.
-func Fetch(client *http.Client, user, repo string) ([]*FetchFile, error) {
+func Fetch(client *http.Client, user, repo, branch string) ([]*FetchFile, error) {
+	if branch == "" {
+		branch = "master"
+	}
 	path := fmt.Sprintf("%s/%s", user, repo)
-	url := fmt.Sprintf("https://github.com/%s/archive/master.zip", path)
+	url := fmt.Sprintf("https://github.com/%s/archive/%s.zip", path, branch)
 
 	resp, err := client.Get(url)
 	if err != nil {
@@ -49,8 +53,11 @@ func Fetch(client *http.Client, user, repo string) ([]*FetchFile, error) {
 		bytes, _ := ioutil.ReadAll(reader)
 		reader.Close()
 
+		// Remove expected prefix: "<repo>-<branch>/".
+		path := strings.TrimPrefix(file.Name, repo + "-" + branch + "/")
+
 		ff := &FetchFile{
-			Path:  file.Name,
+			Path:  path,
 			When:  file.ModTime(),
 			Bytes: bytes,
 		}
