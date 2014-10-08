@@ -3,13 +3,21 @@ package main
 import (
 	"archive/zip"
 	"bytes"
+	"log"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
+type FetchFile struct {
+	Path string
+	When time.Time
+	Bytes []byte
+}
+
 // Fetch pulls a zip file from github.
-func Fetch(client *http.Client, user, repo string) ([]string, error) {
+func Fetch(client *http.Client, user, repo string) ([]*FetchFile, error) {
 	path := fmt.Sprintf("%s/%s", user, repo)
 	url := fmt.Sprintf("https://github.com/%s/archive/master.zip", path)
 
@@ -29,9 +37,24 @@ func Fetch(client *http.Client, user, repo string) ([]string, error) {
 		return nil, err
 	}
 
-	var out []string
+	var out []*FetchFile
 	for _, file := range r.File {
-		out = append(out, file.Name)
+		// TODO: we probably don't want to read large-ish binary files
+		reader, err := file.Open()
+		if err != nil {
+			// ignore for now, continue
+			log.Printf("can't open file from zip: %s", file.Name)
+			continue
+		}
+		bytes, _ := ioutil.ReadAll(reader)
+		reader.Close()
+
+		ff := &FetchFile{
+			Path: file.Name,
+			When: file.ModTime(),
+			Bytes: bytes,
+		}
+		out = append(out, ff)
 	}
 	return out, nil
 }

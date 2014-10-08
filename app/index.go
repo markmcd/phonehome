@@ -1,7 +1,10 @@
 package main
 
 import (
+	"strings"
+
 	"appengine"
+	"appengine/datastore"
 )
 
 type Result struct {
@@ -18,25 +21,45 @@ type Result struct {
 func Search(c appengine.Context, query string) (results []*Result, err error) {
 	// TODO: everything
 
+	fields := Fields([]byte(query))
+	if len(fields) == 0 {
+		return  nil, nil
+	}
+
 	if query != "test" {
 		// dummy return nothing
 		return nil, nil
 	}
 
-	// with "test", return...
-	result := &Result{
-		User: "google",
-		Repo: "go-github",
-		Path: "examples/markdown/main.go",
-		Line: 100,
-		Offset: 1,
-		Lines: []string{
-			"const x = \"whatever\"",
-			"# your result test is awesome",
-			"const y = \"other stuff\"",
-		},
+	for _, field := range fields {
+		s := string(field)
+		q := datastore.NewQuery("Token").
+				Filter("Term >", s).
+				Filter("Term <", s + "\uffffd")
+		var out []*Token
+		keys, _ := q.GetAll(c, out)
+
+		// For now, just add everything.
+
+		for i, tkey := range keys {
+			token := out[i]
+			fkey := tkey.Parent() // file key
+			rkey := fkey.Parent() // repo key
+
+			parts := strings.Split(rkey.StringID(), "/")
+
+			for _, line := range token.Line {
+				result := &Result{
+					User: parts[0],
+					Repo: parts[1],
+					Path: fkey.StringID(),
+					Line: line,
+					// TODO: offset/lines
+				}
+				results = append(results, result)
+			}
+		}
 	}
 
-	results = append(results, result)
 	return
 }
