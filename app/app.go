@@ -110,6 +110,7 @@ func init() {
 			return
 		}
 		c.Infof("updated %s (%v)", repo.ID(), stats)
+		fmt.Fprintf(w, "updated %s (%v)", repo.ID(), stats)
 	})
 	http.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
 		c := appengine.NewContext(r)
