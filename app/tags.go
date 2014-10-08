@@ -10,6 +10,15 @@ func Fields(raw []byte) [][]byte {
 	fields := bytes.FieldsFunc(raw, func(c rune) bool {
 		return !unicode.IsLetter(c) && !unicode.IsNumber(c) && c != '.'
 	})
+
+	// drop leading '.' from any result (e.g. .foobar => foobar)...
+	for i, f := range fields {
+		if f[0] == '.' {
+			f = f[1:]
+			fields[i] = f
+		}
+	}
+
 	return fields
 }
 

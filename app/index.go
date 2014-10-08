@@ -23,6 +23,7 @@ func Index(c appengine.Context, repo *Repo, ffs []*FetchFile) error {
 	stats := struct {
 		Files, EmptyFiles, Tokens int
 	}{}
+	c.Infof("indexing %s", repo.ID())
 
 	rkey := datastore.NewKey(c, "Repo", repo.ID(), 0, nil)
 
@@ -49,6 +50,7 @@ func Index(c appengine.Context, repo *Repo, ffs []*FetchFile) error {
 	}
 	ents = append(ents, repo)
 	keys = append(keys, rkey)
+	c.Infof("generated %d ents for %s", len(keys), repo.ID())
 
 	return datastore.RunInTransaction(c, func(c appengine.Context) error {
 		// 1: delete everything
