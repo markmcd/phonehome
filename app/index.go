@@ -19,25 +19,21 @@ type Result struct {
 }
 
 func Search(c appengine.Context, query string) (results []*Result, err error) {
-	// TODO: everything
-
 	fields := Fields([]byte(query))
 	if len(fields) == 0 {
 		return  nil, nil
 	}
 
-	if query != "test" {
-		// dummy return nothing
-		return nil, nil
-	}
-
 	for _, field := range fields {
 		s := string(field)
 		q := datastore.NewQuery("Token").
-				Filter("Term >", s).
+				Filter("Term >=", s).
 				Filter("Term <", s + "\uffffd")
 		var out []*Token
-		keys, _ := q.GetAll(c, out)
+		keys, err := q.GetAll(c, &out)
+		if err != nil {
+			return nil, err
+		}
 
 		// For now, just add everything.
 
