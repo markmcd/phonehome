@@ -2,26 +2,36 @@ package main
 
 import (
 	"fmt"
-	"html"
 	"net/http"
-	// "strings"
+
+	"appengine"
+	"appengine/urlfetch"
 )
 
 func init() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
-		//
-		// q := r.FormValue("q")
-		// re, err := regexp.Compile(q)
-		// if err != nil {
-		// 	w.WriteHeader(500)
-		// 	return
-		// }
-		//
-		// r := strings.NewReader("import test\nx = 1\nprint(\"hello %d\" % x)")
-		//
-		// var g regexp.Grep
-		// g.Regexp = re
-		// g.Reader(r, "test.py")
+	http.HandleFunc("/index", func(w http.ResponseWriter, r *http.Request) {
+		c := appengine.NewContext(r)
+		client := urlfetch.Client(c)
+
+		user := r.FormValue("user")
+		repo := r.FormValue("repo")
+		if user == "" || repo == "" {
+			c.Debugf("needs user/repo set")
+			w.WriteHeader(400)
+			return
+		}
+
+		names, err := Fetch(client, user, repo)
+		if err != nil {
+			c.Warningf("couldn't fetch %s/%s: %s", user, repo, err)
+			w.WriteHeader(500)
+			return
+		}
+
+		// success-ish
+		fmt.Fprintf(w, "found %d files in %s/%s", len(names), user, repo)
+		for _, name := range names {
+			c.Infof("got file: %s", name)
+		}
 	})
 }
