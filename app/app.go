@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -33,5 +34,26 @@ func init() {
 		for _, name := range names {
 			c.Infof("got file: %s", name)
 		}
+	})
+	http.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
+		c := appengine.NewContext(r)
+
+		query := r.FormValue("q")
+		if query == "" {
+			c.Debugf("no search query")
+			w.WriteHeader(400)
+			return
+		}
+
+        results, err := Search(c, query)
+        if err != nil {
+            c.Warningf("search failed: %s", err)
+            w.WriteHeader(500)
+            return
+        }
+        w.Header().Set("Content-Type", "application/json")
+
+        json, err := json.Marshal(results)
+        fmt.Fprintf(w, string(json))
 	})
 }
