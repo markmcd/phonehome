@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -20,14 +21,28 @@ func (r *Repo) ID() string {
 	return fmt.Sprintf("%s/%s", r.User, r.Repo)
 }
 
+func BuildRepo(raw string) *Repo {
+	parts := strings.Split(raw, "/")
+	if len(parts) < 2 {
+		return nil
+	}
+	r := &Repo{}
+	r.User, r.Repo = parts[0], parts[1]
+	if len(parts) >= 3 {
+		r.Branch = parts[2]
+	}
+	return r
+}
+
 // File is a file within a Repo. Its key is its path.
 type File struct {
 	When time.Time
+	Lines [][]byte
 }
 
 // Token is an indexed term. It has no obvious key, but its parent should be a
 // file Key and contain its path.
 type Token struct {
-	Line []int
+	Lines []int // stores lines starting with 0
 	Term string
 }

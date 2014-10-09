@@ -22,10 +22,9 @@ func Fields(raw []byte) [][]byte {
 	return fields
 }
 
-func Tags(raw []byte) (out []*Token) {
+func Tags(lines [][]byte) (out []*Token) {
 	mapping := make(map[string]map[int]bool)
 
-	lines := bytes.Split(raw, []byte("\n"))
 	for no, line := range lines {
 
 		// TODO: language-specific stuff
@@ -37,7 +36,7 @@ func Tags(raw []byte) (out []*Token) {
 				lines = make(map[int]bool)
 				mapping[s] = lines
 			}
-			lines[1+no] = true
+			lines[no] = true
 		}
 	}
 
@@ -46,7 +45,7 @@ func Tags(raw []byte) (out []*Token) {
 		for no, _ := range linemap {
 			lines = append(lines, no)
 		}
-		t := &Token{Line: lines, Term: term}
+		t := &Token{Lines: lines, Term: term}
 		out = append(out, t)
 	}
 

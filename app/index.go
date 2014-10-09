@@ -1,7 +1,7 @@
 package main
 
 import (
-	"strings"
+	"bytes"
 
 	"appengine"
 	"appengine/datastore"
@@ -17,6 +17,8 @@ type Result struct {
 
 	Offset int // offset within Lines where result is
 	Lines  []string
+
+	fkey *datastore.Key
 }
 
 func Index(c appengine.Context, repo *Repo, ffs []*FetchFile) error {
@@ -30,9 +32,11 @@ func Index(c appengine.Context, repo *Repo, ffs []*FetchFile) error {
 	var ents []interface{}
 	var keys []*datastore.Key
 	for _, ff := range ffs {
+		lines := bytes.Split(ff.Bytes, []byte("\n"))
+
 		fkey := datastore.NewKey(c, "File", ff.Path, 0, rkey)
 		tkey := datastore.NewIncompleteKey(c, "Token", fkey)
-		tokens := Tags(ff.Bytes)
+		tokens := Tags(lines)
 		if len(tokens) == 0 {
 			stats.EmptyFiles++
 			continue // don't store this file
@@ -44,7 +48,7 @@ func Index(c appengine.Context, repo *Repo, ffs []*FetchFile) error {
 		}
 		stats.Tokens += len(tokens)
 
-		ents = append(ents, &File{When: ff.When})
+		ents = append(ents, &File{When: ff.When, Lines: lines})
 		keys = append(keys, fkey)
 		stats.Files++
 	}
@@ -80,6 +84,9 @@ func Search(c appengine.Context, query string) (results []*Result, err error) {
 		return nil, nil
 	}
 
+	files := make(map[string]*File)
+	var fkeys []*datastore.Key
+
 	for _, field := range fields {
 		s := string(field)
 		q := datastore.NewQuery("Token").
@@ -98,25 +105,55 @@ func Search(c appengine.Context, query string) (results []*Result, err error) {
 			fkey := tkey.Parent() // file key
 			rkey := fkey.Parent() // repo key
 
-			parts := strings.Split(rkey.StringID(), "/")
-			user, repo := parts[0], parts[1]
-			var branch string
-			if len(parts) >= 3 {
-				branch = parts[2]
+			path := fkey.StringID()
+			if _, ok := files[fkey.String()]; !ok {
+				files[fkey.String()] = nil
+				fkeys = append(fkeys, fkey)
 			}
 
-			for _, line := range token.Line {
+			repo := BuildRepo(rkey.StringID())
+			for _, line := range token.Lines {
 				result := &Result{
-					User: user,
-					Repo: repo,
-					Branch: branch,
-					Path: fkey.StringID(),
-					Line: line,
-					// TODO: offset/lines
+					fkey: fkey,
+					User: repo.User,
+					Repo: repo.Repo,
+					Branch: repo.Branch,
+					Path: path,
+					Line: 1+line,
 				}
 				results = append(results, result)
 			}
 		}
+	}
+
+	// Load context for files.
+	out := make([]File, len(fkeys))
+	err = datastore.GetMulti(c, fkeys, out)
+	if err != nil {
+		c.Infof("can't get files: keys=%v", fkeys)
+		return nil, err
+	}
+	for i, file := range out {
+		fkey := fkeys[i]
+		files[fkey.String()] = &file
+	}
+	for _, result := range results {
+		file := files[result.fkey.String()]
+		if file == nil {
+			c.Warningf("couldn't load file key: %s", result.fkey.String())
+			continue
+		}
+		lineno := result.Line - 1  // actual line
+
+		if len(file.Lines) < lineno {
+			c.Warningf("file has %d lines, wanted %d: %s", len(file.Lines), lineno, result.fkey.String())
+			continue
+		}
+
+		// TODO: line context
+		line := string(file.Lines[lineno])
+		result.Lines = make([]string, 1)
+		result.Lines[0] = line
 	}
 
 	return

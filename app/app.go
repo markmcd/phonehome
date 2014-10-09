@@ -5,12 +5,43 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+	"net/url"
 
 	"appengine"
+	"appengine/taskqueue"
 	"appengine/urlfetch"
 )
 
 func init() {
+	http.HandleFunc("/webhook", func(w http.ResponseWriter, r *http.Request) {
+		c := appengine.NewContext(r)
+		request := struct{
+			Repo struct{
+				Name string `json:"name"`
+			} `json:"repository"`
+		}{}
+
+		d := json.NewDecoder(r.Body)
+		err := d.Decode(&request)
+		if err != nil {
+			c.Warningf("couldn't decode webhook: %v", err)
+			w.WriteHeader(500)
+			return
+		}
+
+		repo := BuildRepo(request.Repo.Name)
+		t := taskqueue.NewPOSTTask("/index", url.Values{
+			"user": {repo.User},
+			"repo": {repo.Repo},
+			// TODO: branch
+		})
+		_, err = taskqueue.Add(c, t, "")
+		if err != nil {
+			c.Warningf("couldn't enqueue task: %v", err)
+			w.WriteHeader(500)
+			return
+		}
+	})
 	http.HandleFunc("/index", func(w http.ResponseWriter, r *http.Request) {
 		c := appengine.NewContext(r)
 		client := urlfetch.Client(c)

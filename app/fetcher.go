@@ -13,6 +13,11 @@ import (
 	"time"
 )
 
+const (
+	SIZE_LIMIT = 1024 * 256 // 256k max
+	ASCII_SAFE = 256
+)
+
 type FetchFile struct {
 	Path  string
 	When  time.Time
@@ -77,6 +82,10 @@ func Fetch(client *http.Client, user, repo, branch string) ([]*FetchFile, error)
 
 // shouldReadFile guesses whether the file should be read/indexed.
 func shouldReadFile(path string, fh *zip.FileHeader) bool {
+	if fh.UncompressedSize64 > SIZE_LIMIT {
+		return false
+	}
+
 	basename := pathutil.Base(path)
 	if len(basename) == 0 {
 		return false
@@ -103,7 +112,7 @@ func probablyText(raw []byte) bool {
 		if char >= 32 && char < 128 {
 			valid++
 		}
-		if valid >= 256 {
+		if valid >= ASCII_SAFE {
 			return true
 		}
 	}
