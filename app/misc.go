@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	OP_LIMIT = 1000
+	OP_LIMIT = 500
 )
 
 // PartPutMulti performs a number of small PutMulti operations over a large

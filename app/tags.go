@@ -11,10 +11,15 @@ func Fields(raw []byte) [][]byte {
 		return !unicode.IsLetter(c) && !unicode.IsNumber(c) && c != '.'
 	})
 
-	// drop leading '.' from any result (e.g. .foobar => foobar)...
 	for i, f := range fields {
+		// drop leading '.' from any result (e.g. .foobar => foobar)...
 		if f[0] == '.' {
 			f = f[1:]
+			fields[i] = f
+		}
+		// limit length (appengine max is 500)
+		if len(f) > 128 {
+			f = f[:128]
 			fields[i] = f
 		}
 	}
