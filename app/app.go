@@ -17,7 +17,7 @@ func init() {
 		c := appengine.NewContext(r)
 		request := struct{
 			Repo struct{
-				Name string `json:"name"`
+				FullName string `json:"full_name"`
 			} `json:"repository"`
 		}{}
 
@@ -29,9 +29,9 @@ func init() {
 			return
 		}
 
-		repo := BuildRepo(request.Repo.Name)
+		repo := BuildRepo(request.Repo.FullName)
 		if repo == nil {
-			c.Warningf("couldn't build repo from name: %s", request.Repo.Name)
+			c.Warningf("couldn't build repo from name: %s", request.Repo.FullName)
 			w.WriteHeader(400)
 			return
 		}
