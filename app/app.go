@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"appengine"
 	"appengine/urlfetch"
@@ -14,26 +15,35 @@ func init() {
 		c := appengine.NewContext(r)
 		client := urlfetch.Client(c)
 
-		user := r.FormValue("user")
-		repo := r.FormValue("repo")
-		if user == "" || repo == "" {
+		repo := &Repo{
+			User:    r.FormValue("user"),
+			Repo:    r.FormValue("repo"),
+			Updated: time.Now(),
+		}
+		if r.FormValue("branch") != "" {
+			repo.Branch = r.FormValue("branch")
+		}
+		if repo.User == "" || repo.Repo == "" {
 			c.Debugf("needs user/repo set")
 			w.WriteHeader(400)
 			return
 		}
 
-		names, err := Fetch(client, user, repo)
+		ffs, err := Fetch(client, repo.User, repo.Repo, repo.Branch)
 		if err != nil {
-			c.Warningf("couldn't fetch %s/%s: %s", user, repo, err)
+			c.Warningf("couldn't fetch %s: %s", repo.ID(), err)
 			w.WriteHeader(500)
 			return
 		}
 
-		// success-ish
-		fmt.Fprintf(w, "found %d files in %s/%s", len(names), user, repo)
-		for _, name := range names {
-			c.Infof("got file: %s", name)
+		err = Index(c, repo, ffs)
+		if err != nil {
+			c.Warningf("couldn't index %s: %s", repo.ID(), err)
+			w.WriteHeader(500)
+			return
 		}
+
+		fmt.Fprintf(w, "updated %s", repo.ID())
 	})
 	http.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
 		c := appengine.NewContext(r)
@@ -45,15 +55,15 @@ func init() {
 			return
 		}
 
-        results, err := Search(c, query)
-        if err != nil {
-            c.Warningf("search failed: %s", err)
-            w.WriteHeader(500)
-            return
-        }
-        w.Header().Set("Content-Type", "application/json")
+		results, err := Search(c, query)
+		if err != nil {
+			c.Warningf("search failed: %s", err)
+			w.WriteHeader(500)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
 
-        json, err := json.Marshal(results)
-        fmt.Fprintf(w, string(json))
+		json, err := json.Marshal(results)
+		fmt.Fprintf(w, string(json))
 	})
 }
