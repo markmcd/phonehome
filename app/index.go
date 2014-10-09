@@ -133,9 +133,9 @@ func Search(c appengine.Context, query string) (results []*Result, err error) {
 		c.Infof("can't get files: keys=%v", fkeys)
 		return nil, err
 	}
-	for i, file := range out {
+	for i, _ := range out {
 		fkey := fkeys[i]
-		files[fkey.String()] = &file
+		files[fkey.String()] = &out[i]
 	}
 	for _, result := range results {
 		file := files[result.fkey.String()]
