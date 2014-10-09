@@ -1,24 +1,26 @@
 <!DOCTYPE html>
-<html>
+<html ng-app="phonehome">
 <head>
-    <style>
-        input[type="search"] {
-            -webkit-appearance: textfield;
-        }
-
-        input[type="search"]::-webkit-search-decoration,
-        input[type="search"]::-webkit-search-cancel-button {
-            -webkit-appearance: none;
-        }
-
-        #search {
-            height: 50px;
-            width: 700px;
-            font-size: 20pt;
-        }
-    </style>
+    <link rel="stylesheet" type="text/css" href="static/pretty.css" />
+    <link rel="stylesheet" type="text/css" href="static/angular-material.css" />
+    <link rel="stylesheet" type="text/css" href="static/prism.css" />
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.26/angular.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="static/angular-material.js"></script>
+    <script src="static/prism.js"></script>
+    <script src="static/magic.js"></script>
 </head>
-<body>
-    <input type="search" id="search" placeholder="Search for something... e.g. DistanceMatrix"/>
+<body ng-controller="searchCtrl">
+    <material-toolbar class="material-theme-light-blue material-medium-tall" style="padding-top:15px;">
+    <div class="material-toolbar-tools dark">
+        <input type="search" id="search" placeholder="Search for something... e.g. DistanceMatrix" ng-keydown="search()" ng-model="query"/>
+    </div>
+    </material-toolbar>
+    <material-card ng-repeat="result in results">
+        <h2>{{result.Path}}</h2>
+        <h3>{{result.User}}/{{result.Repo}}</h3>
+
+        <pre><code class="language-java">{{ result.Lines.join('\n') }}</code></pre>
+    </material-card>
 </body>
 </html>
