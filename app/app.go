@@ -30,6 +30,11 @@ func init() {
 		}
 
 		repo := BuildRepo(request.Repo.Name)
+		if repo == nil {
+			c.Warningf("couldn't build repo from name: %s", request.Repo.Name)
+			w.WriteHeader(400)
+			return
+		}
 		t := taskqueue.NewPOSTTask("/index", url.Values{
 			"user": {repo.User},
 			"repo": {repo.Repo},
